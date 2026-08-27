@@ -402,7 +402,9 @@ function normalizeQuestBundle(
       traderId: task.trader || "",
       traderName: traderName(task.trader),
       minPlayerLevel: Number(task.minPlayerLevel || 0),
-      primaryMapId: declaredMap || mapIdsForQuest[0] || null,
+      // Upstream leaves this unset for "any location" quests; inferring one from the first
+      // objective would present them as belonging to a map they are not scoped to.
+      primaryMapId: declaredMap || null,
       mapIds: mapIdsForQuest,
       summary:
         requiredObjectives
