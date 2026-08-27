@@ -84,7 +84,7 @@ const poi = z
   })
   .loose();
 const questObjectivePoi = poi.extend({
-  kind: z.literal("quest-objective"),
+  kind: z.enum(["quest-objective", "quest-possible-location"]),
   category: z.literal("quest-objective"),
   mapId,
   taskId: identifier,

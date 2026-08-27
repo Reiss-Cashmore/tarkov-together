@@ -118,6 +118,12 @@ describe("runtime boundary validation", () => {
     expect(parseQuestPoiSnapshot({ mapId: "customs", pois: [] })).toEqual({ mapId: "customs", pois: [] });
     expect(() => parseQuestPoiSnapshot({ ...snapshot, mapId: "../escape" })).toThrow();
     expect(() => parseQuestPoiSnapshot({ mapId: "customs", pois: [{ ...poi, taskId: "" }] })).toThrow();
+    // Candidate spawn markers ride the same relay, so the schema must accept their kind.
+    const candidate = { ...poi, kind: "quest-possible-location", locationIndex: 0, locationCount: 9 };
+    expect(parseQuestPoiSnapshot({ mapId: "customs", pois: [candidate] })).toEqual({
+      mapId: "customs",
+      pois: [candidate],
+    });
     expect(() => parseQuestPoiSnapshot({ mapId: "customs", pois: [{ ...poi, kind: "extract" }] })).toThrow();
     expect(() => parseQuestPoiSnapshot({ mapId: "customs", pois: Array.from({ length: 129 }, () => poi) })).toThrow();
   });
