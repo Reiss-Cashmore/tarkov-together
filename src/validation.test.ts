@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { defaultSettings } from "./locator";
-import { parseCustomPins, parseQuestProgress, parseSettings, parseSquadPositions, readStoredJson } from "./validation";
+import {
+  parseCustomPins,
+  parseQuestBundle,
+  parseQuestProgress,
+  parseSettings,
+  parseSquadPositions,
+  readStoredJson,
+} from "./validation";
 
 describe("runtime boundary validation", () => {
   it("accepts current settings and rejects unsupported or unsafe values", () => {
@@ -49,6 +56,48 @@ describe("runtime boundary validation", () => {
     expect(() => parseSquadPositions([{ ...position, mapId: "../escape" }])).toThrow();
     expect(() => parseSquadPositions([{ ...position, heading: 360 }])).toThrow();
     expect(() => parseSquadPositions(Array.from({ length: 17 }, () => position))).toThrow();
+  });
+
+  it("parses quest bundles generated before possible locations existed", () => {
+    const objective = {
+      id: "objective",
+      description: "Locate the magazine",
+      type: "findQuestItem",
+      optional: false,
+      mapIds: ["interchange"],
+      details: [],
+      zones: [],
+    };
+    const bundle = (objectives: unknown[]) => ({
+      schemaVersion: 2,
+      generatedAt: "2026-01-01",
+      gameMode: "pve",
+      quests: [
+        {
+          id: "quest",
+          name: "Minute of Fame",
+          traderId: "skier",
+          traderName: "Skier",
+          minPlayerLevel: 12,
+          primaryMapId: "interchange",
+          mapIds: ["interchange"],
+          summary: "",
+          experience: 0,
+          chainDepth: 0,
+          rewardSummary: [],
+          objectives,
+          requirements: [],
+        },
+      ],
+    });
+    expect(parseQuestBundle(bundle([objective])).quests[0].objectives[0].possibleLocations).toEqual([]);
+    const located = { ...objective, possibleLocations: [{ mapId: "interchange", positions: [{ x: 1, y: 2, z: 3 }] }] };
+    expect(parseQuestBundle(bundle([located])).quests[0].objectives[0].possibleLocations).toEqual(
+      located.possibleLocations,
+    );
+    expect(() =>
+      parseQuestBundle(bundle([{ ...objective, possibleLocations: [{ mapId: "../escape", positions: [] }] }])),
+    ).toThrow();
   });
 
   it("falls back without rewriting corrupt local storage", () => {
