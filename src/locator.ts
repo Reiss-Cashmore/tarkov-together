@@ -8,6 +8,7 @@ import type {
   OcrTextCapture,
   OverlayState,
   PlayerFix,
+  QuestPoiSnapshot,
   QuestProgress,
   QuestProfile,
   QuestGameMode,
@@ -23,6 +24,7 @@ import {
   parseOcrText,
   parseOverlayState,
   parsePlayerFix,
+  parseQuestPoiSnapshot,
   parseQuestProgress,
   parseQuestProgressEntry,
   parseQuestProfiles,
@@ -145,6 +147,23 @@ export async function subscribeSquadPositions(handler: (positions: SquadPosition
   return listen<unknown>("squad://positions", (event) => {
     try {
       handler(parseSquadPositions(event.payload));
+    } catch (error) {
+      console.warn("Ignored invalid native event payload", error);
+    }
+  });
+}
+
+// Quest objectives are derived from quest progress inside the main window's quest panel, so the
+// overlay receives the computed markers over the same channel as squad positions.
+export async function publishQuestPois(snapshot: QuestPoiSnapshot) {
+  if (isTauriRuntime()) await emitTo("overlay", "quest://objective-pois", snapshot);
+}
+
+export async function subscribeQuestPois(handler: (snapshot: QuestPoiSnapshot) => void): Promise<UnlistenFn> {
+  if (!isTauriRuntime()) return () => undefined;
+  return listen<unknown>("quest://objective-pois", (event) => {
+    try {
+      handler(parseQuestPoiSnapshot(event.payload));
     } catch (error) {
       console.warn("Ignored invalid native event payload", error);
     }

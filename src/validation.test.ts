@@ -3,6 +3,7 @@ import { defaultSettings } from "./locator";
 import {
   parseCustomPins,
   parseQuestBundle,
+  parseQuestPoiSnapshot,
   parseQuestProgress,
   parseSettings,
   parseSquadPositions,
@@ -98,6 +99,27 @@ describe("runtime boundary validation", () => {
     expect(() =>
       parseQuestBundle(bundle([{ ...objective, possibleLocations: [{ mapId: "../escape", positions: [] }] }])),
     ).toThrow();
+  });
+
+  it("accepts quest objective snapshots relayed to the overlay and rejects malformed ones", () => {
+    const poi = {
+      id: "quest-active-task-objective-customs-0",
+      kind: "quest-objective",
+      category: "quest-objective",
+      mapId: "customs",
+      name: "Debut",
+      description: "Eliminate Scavs",
+      taskId: "task",
+      objectiveId: "objective",
+      position: { x: 10, y: 0, z: 20 },
+    };
+    const snapshot = { mapId: "customs", pois: [poi] };
+    expect(parseQuestPoiSnapshot(snapshot)).toEqual(snapshot);
+    expect(parseQuestPoiSnapshot({ mapId: "customs", pois: [] })).toEqual({ mapId: "customs", pois: [] });
+    expect(() => parseQuestPoiSnapshot({ ...snapshot, mapId: "../escape" })).toThrow();
+    expect(() => parseQuestPoiSnapshot({ mapId: "customs", pois: [{ ...poi, taskId: "" }] })).toThrow();
+    expect(() => parseQuestPoiSnapshot({ mapId: "customs", pois: [{ ...poi, kind: "extract" }] })).toThrow();
+    expect(() => parseQuestPoiSnapshot({ mapId: "customs", pois: Array.from({ length: 129 }, () => poi) })).toThrow();
   });
 
   it("falls back without rewriting corrupt local storage", () => {
